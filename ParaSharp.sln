@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jewels.ParaSharp", "Jewels.ParaSharp\Jewels.ParaSharp.csproj", "{0C2D90E5-B57F-4455-89DB-CA10178C52F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Testing", "Testing\Testing.csproj", "{EDB3630A-2D9F-4DF9-A3CD-C5405E282707}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0C2D90E5-B57F-4455-89DB-CA10178C52F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C2D90E5-B57F-4455-89DB-CA10178C52F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C2D90E5-B57F-4455-89DB-CA10178C52F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C2D90E5-B57F-4455-89DB-CA10178C52F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EDB3630A-2D9F-4DF9-A3CD-C5405E282707}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDB3630A-2D9F-4DF9-A3CD-C5405E282707}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDB3630A-2D9F-4DF9-A3CD-C5405E282707}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDB3630A-2D9F-4DF9-A3CD-C5405E282707}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
