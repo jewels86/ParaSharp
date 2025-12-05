@@ -51,19 +51,19 @@ public class Paravector2(float alpha, float theta, float beta)
     {
         var alpha = MathF.Sqrt(x * x + y * y);
         var theta = MathF.Atan2(y, x);
-        var beta = (MathF.PI / 2 - theta) / 2;
+        var beta = 0.5f * (MathF.PI * 0.5f - theta);
         return new Paravector2(alpha, theta, beta);
     }
 
     public static Paravector2 FromVectorDifference(float x1, float y1, float x2, float y2) => FromVector(x2 - x1, y2 - y1);
 
-    public void Update(float baseLR, int index, int total)
+    public void Update(float baseLR, float alphaLR, float thetaLR, float betaLR, int index, int total)
     {
         var lr = baseLR * (1 - 0.5f * (index / (float)total));
         
-        Alpha.Value -= lr * Alpha.Grad;
-        Theta.Value -= lr * Theta.Grad;
-        Beta.Value -= lr * Beta.Grad;
+        Alpha.Value -= alphaLR * lr * Alpha.Grad;
+        Theta.Value -= thetaLR * lr * Theta.Grad;
+        Beta.Value -= betaLR * lr * Beta.Grad;
 
         if (Alpha.Value < 0) Alpha.Value = Scalar.BiggerEpsilon;
         if (Theta.Value > MathF.PI / 2) Theta.Value = MathF.PI - Scalar.BiggerEpsilon;

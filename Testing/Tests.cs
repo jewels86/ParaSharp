@@ -25,7 +25,7 @@ public class Tests
             total: 10,
             inputs: inputs,
             targets: targets,
-            lr: 0.001f,
+            baseLR: 0.0001f,
             maxEpochs: 10000,
             loss: Scalar.MSE,
             lossEpsilon: 1f,

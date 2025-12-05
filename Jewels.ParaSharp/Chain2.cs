@@ -78,13 +78,19 @@ public class Chain2
         int total, 
         float[] inputs, 
         float[] targets, 
-        float lr, 
+        float baseLR, 
         int maxEpochs, 
         Func<Scalar, float, Scalar> loss, 
+        float alphaLR = -1,
+        float thetaLR = -1,
+        float betaLR = -1,
         float lossEpsilon = 1e-2f,
         float lengthWeight = 0.1f,
         Action<float, int>? action = null)
     {
+        if (alphaLR < 0) alphaLR = 1;
+        if (thetaLR < 0) thetaLR = 1;
+        if (betaLR < 0) betaLR = 3;
         Scalar[] inputTensors = inputs.Select(x => new Scalar(x)).ToArray();
         
         List<Paravector2> paravectors = [];
@@ -115,7 +121,7 @@ public class Chain2
                 
                 lossTensor.Backward(1f);
                 totalLoss += lossTensor.Value;
-                for (int j = 0; j < paravectors.Count; j++) paravectors[j].Update(lr, j, paravectors.Count);
+                for (int j = 0; j < paravectors.Count; j++) paravectors[j].Update(baseLR, alphaLR, thetaLR, betaLR, j, paravectors.Count);
                 // i think whats happening is that upsilons further from the start are more affected by changes throughout the chain
                 // thats why x = 0, loss = 0, x = 0.79, loss = 0.01, x = 4.71, loss = 0.93
                 // either upsilons need a way to look at what other's have done or we need to have ascending learning rates
@@ -126,7 +132,7 @@ public class Chain2
             var lengthPenalty = lengthDiff.Square() * new Scalar(lengthWeight);
             lengthPenalty.Backward(1f);
             totalLoss += lengthPenalty.Value;
-            for (int j = 0; j < paravectors.Count; j++) paravectors[j].Update(lr, j, paravectors.Count);
+            for (int j = 0; j < paravectors.Count; j++) paravectors[j].Update(baseLR, alphaLR, thetaLR, betaLR, j, paravectors.Count);
             
             action?.Invoke(totalLoss, epoch);
             if (totalLoss < lossEpsilon) return chain;
