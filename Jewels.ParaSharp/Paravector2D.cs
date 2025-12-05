@@ -11,7 +11,7 @@ public class Paravector2D(float alpha, float theta, float beta)
     public float YLength => Alpha.Value * MathF.Sin(Theta.Value);
     // add arc length?
 
-    public Scalar LocalX(Scalar x) => (Scalar.Tangent(-Beta) / Alpha) * x * (x - Alpha);
+    public Scalar LocalX(Scalar x) => (Scalar.Tangent(Beta) / Alpha) * x * (x - Alpha);
     public float LocalX(float x) => LocalX(new Scalar(x)).Value;
 
     public Scalar GlobalX(Scalar x, Scalar? h = null, Scalar? k = null)
@@ -45,21 +45,13 @@ public class Paravector2D(float alpha, float theta, float beta)
     {
         var alpha = MathF.Sqrt(x * x + y * y);
         var theta = MathF.Atan2(y, x);
-        var beta = 0;
+        var beta = -0.3f;
         return new Paravector2D(alpha, theta, beta);
     }
 
     public static Paravector2D FromVectorDifference(float x1, float y1, float x2, float y2) => FromVector(x2 - x1, y2 - y1);
-    public Paravector2D Reverse() => new(Alpha.Value, Theta.Value + MathF.PI, Beta.Value);
-
-    public void ReverseInPlace()
-    {
-        Theta.Value += MathF.PI;
-        while (Theta.Value > MathF.PI) Theta.Value -= MathF.PI * 2;
-        while (Theta.Value < MathF.PI) Theta.Value += MathF.PI * 2;
-    }
-
-    public void Update(float baseLR, float thetaScale = 1.0f, float betaScale = 0.01f)
+    
+    public void Update(float baseLR, float thetaScale = 1.0f, float betaScale = 0.02f)
     {
         Alpha.Value -= baseLR * Alpha.Grad;
         Theta.Value -= baseLR * Theta.Grad * thetaScale;
@@ -86,6 +78,12 @@ public class Paravector2D(float alpha, float theta, float beta)
     {
         var (startX, startY) = (inputs[0], targets[0]);
         var upsilon = FromVectorDifference(startX, startY, fixedEndX, fixedEndY);
+        
+        int midIdx = inputs.Length / 2;
+        float expectedMid = (startY + fixedEndY) / 2f;
+        float actualMid = targets[midIdx];
+
+        upsilon.Beta.Value = (actualMid > expectedMid) ? -DefaultBeta : DefaultBeta;
         Scalar[] inputScalars = inputs.Select(x => new Scalar(x)).ToArray();
 
         for (int epoch = 0; epoch < epochs; epoch++)
@@ -115,4 +113,6 @@ public class Paravector2D(float alpha, float theta, float beta)
         
         return upsilon;
     }
+    
+    public const float DefaultBeta = 0.3f;
 }
