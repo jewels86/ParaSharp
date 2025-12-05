@@ -56,8 +56,10 @@ public class Paravector2(float alpha, float theta, float beta)
 
     public static Paravector2 FromVectorDifference(float x1, float y1, float x2, float y2) => FromVector(x2 - x1, y2 - y1);
 
-    public void Update(float lr)
+    public void Update(float baseLR, int index, int total)
     {
+        var lr = baseLR * (1 - 0.5f * (index / (float)total));
+        
         Alpha.Value -= lr * Alpha.Grad;
         Theta.Value -= lr * Theta.Grad;
         Beta.Value -= lr * Beta.Grad;
