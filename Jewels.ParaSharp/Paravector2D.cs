@@ -21,16 +21,7 @@ public class Paravector2D(float alpha, float theta, float beta)
         var (four, two) = (new Scalar(4f), new Scalar(2f));
         var m = Scalar.Tangent(-Beta) / Alpha;
         
-        if (Scalar.Sine(Theta).Value < 1e-8) // no rotation
-            return k + LocalX(x - h);
-        if (MathF.Abs(m.Value) < 1e-8) // no curvature
-        {
-            var localX2 = (x - h) / Scalar.Cosine(Theta);
-            return k + localX2 * Scalar.Sine(Theta);
-        }
-        
-        
-        var a = m * Scalar.Sine(Theta);
+        var a = m * Scalar.Sine(Theta) + new Scalar(Scalar.Epsilon);
         var b = -(Scalar.Cosine(Theta) + m * Alpha * Scalar.Sine(Theta));
         var c = x - h;
 
@@ -68,11 +59,11 @@ public class Paravector2D(float alpha, float theta, float beta)
         while (Theta.Value < MathF.PI) Theta.Value += MathF.PI * 2;
     }
 
-    public void Update(float baseLR)
+    public void Update(float baseLR, float thetaScale = 1.0f, float betaScale = 0.01f)
     {
         Alpha.Value -= baseLR * Alpha.Grad;
-        Theta.Value -= baseLR * Theta.Grad;
-        Beta.Value -= baseLR * Beta.Grad;
+        Theta.Value -= baseLR * Theta.Grad * thetaScale;
+        Beta.Value -= baseLR * Beta.Grad * betaScale;
 
         if (Alpha.Value < 0) Alpha.Value = Scalar.BiggerEpsilon;
         
@@ -115,9 +106,8 @@ public class Paravector2D(float alpha, float theta, float beta)
 
             var endpointLoss = new Scalar(penalty) * (globalEndX - new Scalar(fixedEndX)).Square() + (globalEndY - new Scalar(fixedEndY)).Square();
             totalLoss += endpointLoss;
-            
-            totalLoss.Backward(1f);
-            if (epoch % 100 == 0) Console.WriteLine($"Epoch {epoch}: Alpha.Grad={upsilon.Alpha.Grad:F4}, Theta.Grad={upsilon.Theta.Grad:F4}, Beta.Grad={upsilon.Beta.Grad:F4}");
+            totalLoss.Backward(1f); 
+
             upsilon.Update(lr);
 
             if (totalLoss.Value < lossEpsilon) break;

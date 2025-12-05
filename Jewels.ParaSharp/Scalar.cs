@@ -101,5 +101,5 @@ public class Scalar
 
     public const float Epsilon = 1e-6f;
     public const float BiggerEpsilon = 0.01f;
-    public const float Penalty = 1f;
+    public const float Penalty = 0.5f;
 }
