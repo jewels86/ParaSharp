@@ -115,7 +115,7 @@ public class Chain2
                 
                 lossTensor.Backward(1f);
                 totalLoss += lossTensor.Value;
-                for (int j = 0; j < paravectors.Count; j++) paravectors[j].Update(lr, i, inputs.Length);
+                for (int j = 0; j < paravectors.Count; j++) paravectors[j].Update(lr, j, paravectors.Count);
                 // i think whats happening is that upsilons further from the start are more affected by changes throughout the chain
                 // thats why x = 0, loss = 0, x = 0.79, loss = 0.01, x = 4.71, loss = 0.93
                 // either upsilons need a way to look at what other's have done or we need to have ascending learning rates
@@ -126,7 +126,7 @@ public class Chain2
             var lengthPenalty = lengthDiff.Square() * new Scalar(lengthWeight);
             lengthPenalty.Backward(1f);
             totalLoss += lengthPenalty.Value;
-            for (int j = 0; j < paravectors.Count; j++) paravectors[j].Update(lr, inputs.Length, inputs.Length);
+            for (int j = 0; j < paravectors.Count; j++) paravectors[j].Update(lr, j, paravectors.Count);
             
             action?.Invoke(totalLoss, epoch);
             if (totalLoss < lossEpsilon) return chain;

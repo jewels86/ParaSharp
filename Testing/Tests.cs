@@ -1,4 +1,5 @@
 ﻿using Jewels.ParaSharp;
+using Jewels.ParaSharp.Plotting;
 
 namespace Testing;
 
@@ -8,7 +9,7 @@ public class Tests
     {
         Console.WriteLine("Sine Approximation Test\n");
     
-        int numPoints = 100;
+        int numPoints = 80;
         float[] inputs = new float[numPoints];
         float[] targets = new float[numPoints];
     
@@ -21,13 +22,13 @@ public class Tests
     
         Console.WriteLine("Training 8 paravectors to approximate sin(x) from 0 to 2π...");
         var chain = Chain2.Fit(
-            total: 8,
+            total: 10,
             inputs: inputs,
             targets: targets,
             lr: 0.001f,
             maxEpochs: 10000,
             loss: Scalar.MSE,
-            lossEpsilon: 0.001f,
+            lossEpsilon: 1f,
             action: (loss, epoch) =>
             {
                 if (epoch % 100 == 0)
@@ -47,5 +48,6 @@ public class Tests
             float error = MathF.Abs(predicted - actual);
             Console.WriteLine($"x = {x,5:F2} | sin(x) = {actual,6:F3} | predicted = {predicted,6:F3} | error = {error:F4}");
         }
+        var plot = chain.Plot(path: "plot.png");
     }
 }

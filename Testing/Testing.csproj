@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Jewels.ParaSharp.Plotting\Jewels.ParaSharp.Plotting.csproj" />
       <ProjectReference Include="..\Jewels.ParaSharp\Jewels.ParaSharp.csproj" />
     </ItemGroup>
 

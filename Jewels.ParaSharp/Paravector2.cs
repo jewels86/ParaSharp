@@ -1,6 +1,7 @@
 ﻿
 namespace Jewels.ParaSharp;
 
+// additions: Length property
 public class Paravector2(float alpha, float theta, float beta)
 {
     public Scalar Alpha { get; } = new(alpha);
@@ -50,7 +51,7 @@ public class Paravector2(float alpha, float theta, float beta)
     {
         var alpha = MathF.Sqrt(x * x + y * y);
         var theta = MathF.Atan2(y, x);
-        var beta = 0.1f;
+        var beta = (MathF.PI / 2 - theta) / 2;
         return new Paravector2(alpha, theta, beta);
     }
 
@@ -65,6 +66,9 @@ public class Paravector2(float alpha, float theta, float beta)
         Beta.Value -= lr * Beta.Grad;
 
         if (Alpha.Value < 0) Alpha.Value = Scalar.BiggerEpsilon;
+        if (Theta.Value > MathF.PI / 2) Theta.Value = MathF.PI - Scalar.BiggerEpsilon;
+        if (Theta.Value < -MathF.PI / 2) Theta.Value = -MathF.PI + Scalar.BiggerEpsilon;
+        if (Theta.Value + Beta.Value > MathF.PI) Beta.Value = MathF.PI - Theta.Value;
         ZeroGrad();
     }
     
