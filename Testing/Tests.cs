@@ -21,22 +21,10 @@ public class Tests
         }
     
         Console.WriteLine("Training 8 paravectors to approximate sin(x) from 0 to 2π...");
-        var chain = Chain2.Fit(
-            total: 10,
-            inputs: inputs,
-            targets: targets,
-            baseLR: 0.0001f,
-            maxEpochs: 10000,
-            loss: Scalar.MSE,
-            lossEpsilon: 1f,
-            action: (loss, epoch) =>
-            {
-                if (epoch % 100 == 0)
-                    Console.WriteLine($"Epoch {epoch}: Loss = {loss:F6}");
-            }
-        );
-    
-        Console.WriteLine($"\nTraining complete! {chain.DomainLength()} domain length.\n");
+        var chain = Chain2D.InductiveDescent(8, 0.01f, 3000, inputs, targets, Scalar.MSE);
+        //var chain = Chain2D.InductiveExploration(8, 0.1f, 2000, inputs, targets, Scalar.MSE, progressAction: (epoch, loss) => 
+        //    Console.WriteLine($"Refinement epoch {epoch} | Loss: {loss}"));
+        Console.WriteLine($"Training complete! {chain.DomainLength()} domain length.");
     
         Console.WriteLine("Testing approximation:");
         float[] testPoints = [0f, MathF.PI / 4, MathF.PI / 2, MathF.PI, 3 * MathF.PI / 2, 2 * MathF.PI];
@@ -48,6 +36,6 @@ public class Tests
             float error = MathF.Abs(predicted - actual);
             Console.WriteLine($"x = {x,5:F2} | sin(x) = {actual,6:F3} | predicted = {predicted,6:F3} | error = {error:F4}");
         }
-        var plot = chain.Plot(path: "plot.png");
+        chain.Plot(inputs, targets, path: "sin_approximation.png");
     }
 }

@@ -2,18 +2,18 @@
 
 namespace Jewels.ParaSharp.Plotting;
 
-public static class Chain2Extensions
+public static class Paravector2DExtensions
 {
-    public static Plot Plot(this Chain2 chain, int num = 100, string? path = null)
+    public static Plot Plot(this Paravector2D upsilon, int num = 100, string? path = null)
     {
-        var domainEnd = chain.DomainLength();
+        var domainEnd = upsilon.XLength;
         float[] inputs = new float[num];
         for (int i = 0; i < num; i++) inputs[i] = i * domainEnd / (num - 1);
         float[] outputs = new float[num];
         for (int i = 0; i < num; i++)
         {
             var input = inputs[i];
-            var output = chain.Evaluate(input);
+            var output = upsilon.GlobalX(input, 0, 0);
             outputs[i] = output;
         }
 
