@@ -1,7 +1,4 @@
-﻿using Jewels.Lazulite;
-using Jewels.Opal;
-using static Jewels.ParaSharp.Paravector;
-using static Jewels.Opal.Operations;
+﻿
 
 namespace Jewels.ParaSharp;
 
@@ -13,12 +10,19 @@ public class Chain2
     public Chain2(IEnumerable<Paravector2> paravectors) => Paravectors.AddRange(paravectors);
     public Chain2() { }
 
-    public Tensor<float> DomainLength()
+    public float DomainLength()
     {
-        List<Tensor<float>> hs = [NewScalar(0)];
+        List<float> hs = [0f];
         for (int i = 0; i < Paravectors.Count; i++)
-            hs.Add(hs[i] + Paravectors[i].Alpha * Cosine(Paravectors[i].Theta));
+            hs.Add(hs[i] + Paravectors[i].Alpha.Value * MathF.Cos(Paravectors[i].Theta.Value));
         return hs[^1];
+    }
+    public Scalar DomainLengthScalar()
+    {
+        Scalar h = new Scalar(0f);
+        for (int i = 0; i < Paravectors.Count; i++)
+            h = h + Paravectors[i].Alpha * Scalar.Cosine(Paravectors[i].Theta);
+        return h;
     }
 
     public Paravector2 GetRelevantParavector(float x, float h = 0)
@@ -27,7 +31,7 @@ public class Chain2
 
         foreach (Paravector2 upsilon in Paravectors)
         {
-            float nextX = current + upsilon.Alpha.Value.ToHost() * MathF.Cos(upsilon.Theta.Value.ToHost());
+            float nextX = current + upsilon.Alpha.Value * MathF.Cos(upsilon.Theta.Value);
             if (x >= current && x < nextX) return upsilon;
             current = nextX;
         }
@@ -41,7 +45,7 @@ public class Chain2
         for (int i = 0; i < Paravectors.Count; i++)
         {
             var upsilon = Paravectors[i];
-            float nextX = current + upsilon.Alpha.Value.ToHost() * MathF.Cos(upsilon.Theta.Value.ToHost());
+            float nextX = current + upsilon.Alpha.Value * MathF.Cos(upsilon.Theta.Value);
             boundaries.Add((current, nextX, i));
             current = nextX;
         }
@@ -55,19 +59,22 @@ public class Chain2
         return Paravectors[^1];
     }
     
+    
     public float Evaluate(float x, float h = 0f, float k = 0f)
     {
-        if (x > DomainLength().Value.ToHost()) throw new Exception("x is out of domain");
         var boundaries = SetupBoundaries(h);
         var upsilon = GetRelevantParavector(x, boundaries);
         return upsilon.GlobalX(x, h, k);
     }
-    public Tensor<float> Evaluate(Tensor<float> x, Tensor<float> h, Tensor<float> k)
+    public Scalar Evaluate(Scalar x, Scalar h, Scalar k)
     {
-        var (xHost, hHost) = (x.Value.ToHost(), h.Value.ToHost());
-        if (xHost > DomainLength().Value.ToHost()) throw new Exception("x is out of domain");
-        var boundaries = SetupBoundaries(hHost);
-        var upsilon = GetRelevantParavector(xHost, boundaries);
+        return TrainEvaluate(x, h, k);
+    }
+
+    public Scalar TrainEvaluate(Scalar x, Scalar h, Scalar k)
+    {
+        var boundaries = SetupBoundaries(h.Value);
+        var upsilon = GetRelevantParavector(x.Value, boundaries);
         return upsilon.GlobalX(x, h, k);
     }
 
@@ -77,46 +84,55 @@ public class Chain2
         float[] targets, 
         float lr, 
         int maxEpochs, 
-        Func<Tensor<float>, Value<float>, Tensor<float>> loss, 
-        float epsilon = Single.Epsilon,
+        Func<Scalar, float, Scalar> loss, 
+        float lossEpsilon = 1e-2f,
+        float lengthWeight = 0.1f,
         Action<float, int>? action = null)
     {
-        Tensor<float>[] inputTensors = inputs.Select(NewScalar).ToArray();
-        Value<float>[] targetValues = targets.Select(Paravector.NewValue).ToArray();
-        Value<float> lrValue = Paravector.NewValue(lr);
+        Scalar[] inputTensors = inputs.Select(x => new Scalar(x)).ToArray();
         
         List<Paravector2> paravectors = [];
-        List<(float x, float y)> points = [(inputs[0], targets[0])];
-        int interval = inputs.Length / total;
-        for (int i = 1; i <= total; i++)
+
+        for (int i = 0; i < total; i++)
         {
-            int idx = (i * interval) % inputs.Length;
-            var (x, y) = (inputs[idx], targets[idx]);
-            var previousPoint = points[^1];
-            var upsilon = Paravector2.FromVectorDifference(previousPoint.x, previousPoint.y, x, y);
-            points.Add((x, y));
-            paravectors.Add(upsilon);
+            int startIdx = i * inputs.Length / total;
+            int endIdx = (i + 1) * inputs.Length / total;
+            if (endIdx >= inputs.Length) endIdx = inputs.Length - 1;
+    
+            float x1 = inputs[startIdx];
+            float y1 = targets[startIdx];
+            float x2 = inputs[endIdx];
+            float y2 = targets[endIdx];
+    
+            paravectors.Add(Paravector2.FromVectorDifference(x1, y1, x2, y2));
         }
         Chain2 chain = new(paravectors);
+        var originalLength = chain.DomainLength();
+        List<float> losses = [];
 
         for (int epoch = 0; epoch < maxEpochs; epoch++)
         {
-            var boundaries = chain.SetupBoundaries(0);
             float totalLoss = 0;
             for (int i = 0; i < inputs.Length; i++)
             {
-                var (input, inputTensor, targetValue) = (inputs[i], inputTensors[i], targetValues[i]);
-                var upsilon = chain.GetRelevantParavector(input, boundaries);
-                var outputTensor = upsilon.GlobalX(inputTensor);
-                using var lossTensor = loss(outputTensor, targetValue);
-                lossTensor.Backward(Paravector.NewValue(1f));
-                totalLoss += lossTensor.Value.ToHost();
+                var outputTensor = chain.TrainEvaluate(inputTensors[i], new Scalar(0f), new Scalar(0f));
+                var lossTensor = loss(outputTensor, targets[i]);
+                
+                lossTensor.Backward(1f);
+                totalLoss += lossTensor.Value;
+                foreach (var upsilon in chain.Paravectors) upsilon.Update(lr);
             }
             
-            foreach (var upsilon in chain.Paravectors) upsilon.Update(lrValue);
+            var currentLength = chain.DomainLengthScalar();
+            var lengthDiff = currentLength - new Scalar(originalLength);
+            var lengthPenalty = lengthDiff.Square() * new Scalar(lengthWeight);
+            lengthPenalty.Backward(1f);
+            totalLoss += lengthPenalty.Value;
+            foreach (var upsilon in chain.Paravectors) upsilon.Update(lr);
             
             action?.Invoke(totalLoss, epoch);
-            if (totalLoss < epsilon) return chain;
+            losses.Add(totalLoss);
+            if (totalLoss < lossEpsilon) return chain;
         }
         
         return chain;

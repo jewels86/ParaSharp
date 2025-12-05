@@ -1,62 +1,75 @@
-﻿using System.Runtime.InteropServices.Swift;
-using Jewels.Lazulite;
-using Jewels.Opal;
-using static Jewels.Opal.Operations;
-using static Jewels.ParaSharp.Paravector;
-
+﻿
 namespace Jewels.ParaSharp;
 
 public class Paravector2(float alpha, float theta, float beta)
 {
-    public Tensor<float> Alpha { get; } = NewScalar(alpha);
-    public Tensor<float> Theta { get; } = NewScalar(theta);
-    public Tensor<float> Beta { get; } = NewScalar(beta);
+    public Scalar Alpha { get; } = new(alpha);
+    public Scalar Theta { get; } = new(theta);
+    public Scalar Beta { get; } = new(beta);
     
-    public Tensor<float> LocalX(Tensor<float> x) => (Tangent(-Beta) / Alpha) * x * (x - Alpha);
-    public float LocalX(float x) => LocalX(NewScalar(x)).Value.ToHost();
+    public Scalar LocalX(Scalar x) => (Scalar.Tangent(-Beta) / Alpha) * x * (x - Alpha);
+    public float LocalX(float x) => LocalX(new Scalar(x)).Value;
 
-    public Tensor<float> GlobalX(Tensor<float> x, Tensor<float>? h = null, Tensor<float>? k = null)
+    public Scalar GlobalX(Scalar x, Scalar? h = null, Scalar? k = null)
     {
-        h ??= NewScalar(0f);
-        k ??= NewScalar(0f);
-        var (four, two) = (NewScalar(4f), NewScalar(2f));
-        var m = Tangent(-Beta) / Alpha;
+        h ??= new(0f);
+        k ??= new(0f);
+        var (four, two) = (new Scalar(4f), new Scalar(2f));
+        var m = Scalar.Tangent(-Beta) / Alpha;
         
-        var a = m * Sine(Theta);
-        var b = -(Cosine(Theta) + m * Alpha * Sine(Theta));
+        if (Scalar.Sine(Theta).Value < 1e-8) // no rotation
+            return k + LocalX(x - h);
+        if (MathF.Abs(m.Value) < 1e-8) // no curvature
+        {
+            var localX2 = (x - h) / Scalar.Cosine(Theta);
+            return k + localX2 * Scalar.Sine(Theta);
+        }
+        
+        
+        var a = m * Scalar.Sine(Theta);
+        var b = -(Scalar.Cosine(Theta) + m * Alpha * Scalar.Sine(Theta));
         var c = x - h;
 
-        var discriminant = Square(b) - four * a * c;
+        var discriminant = b.Square() - four * a * c;
+        var realDiscriminant = discriminant;
+        if (discriminant.Value < 0) 
+            realDiscriminant = new Scalar(Scalar.Epsilon, 0f, [discriminant], s => discriminant.Grad += Scalar.Penalty * s.Grad);
         
-        var localX = (-b - Sqrt(discriminant)) / (two * a);
+        var localX = (-b - Scalar.Sqrt(realDiscriminant)) / (two * a);
         var localY = LocalX(localX);
-        var y = k + localX * Sine(Theta) + localY * Cosine(Theta);
+        var y = k + localX * Scalar.Sine(Theta) + localY * Scalar.Cosine(Theta);
         
         return y;
     }
-    public float GlobalX(float x, float h, float k) => GlobalX(NewScalar(x), NewScalar(h), NewScalar(k)).Value.ToHost();
+    public float GlobalX(float x, float h, float k) => GlobalX(new Scalar(x), new Scalar(h), new Scalar(k)).Value;
     
-    public Func<Tensor<float>, Tensor<float>> AsGlobalX(Tensor<float> h, Tensor<float> k) => x => GlobalX(x, h, k);
+    public Func<Scalar, Scalar> AsGlobalX(Scalar h, Scalar k) => x => GlobalX(x, h, k);
     public Func<float, float> AsGlobalX(float h, float k) => x => GlobalX(x, h, k);
 
     public static Paravector2 FromVector(float x, float y)
     {
         var alpha = MathF.Sqrt(x * x + y * y);
         var theta = MathF.Atan2(y, x);
-        var beta = Single.Epsilon;
+        var beta = 0.1f;
         return new Paravector2(alpha, theta, beta);
     }
 
     public static Paravector2 FromVectorDifference(float x1, float y1, float x2, float y2) => FromVector(x2 - x1, y2 - y1);
 
-    public void Update(Value<float> lr)
+    public void Update(float lr)
     {
-        Alpha.Value.UpdateWith(Alpha.Value.AsScalar() - Alpha.Gradient.AsScalar() * lr.AsScalar());
-        Beta.Value.UpdateWith(Beta.Value.AsScalar() - Beta.Gradient.AsScalar() * lr.AsScalar());
-        Theta.Value.UpdateWith(Theta.Value.AsScalar() - Theta.Gradient.AsScalar() * lr.AsScalar());
-                
-        Alpha.Gradient.UpdateWith(Paravector.NewValue(0f));
-        Beta.Gradient.UpdateWith(Paravector.NewValue(0f));
-        Theta.Gradient.UpdateWith(Paravector.NewValue(0f));
+        Alpha.Value -= lr * Alpha.Grad;
+        Theta.Value -= lr * Theta.Grad;
+        Beta.Value -= lr * Beta.Grad;
+
+        if (Alpha.Value < 0) Alpha.Value = Scalar.BiggerEpsilon;
+        ZeroGrad();
+    }
+    
+    public void ZeroGrad()
+    {
+        Alpha.ZeroGrad();
+        Theta.ZeroGrad();
+        Beta.ZeroGrad();
     }
 }

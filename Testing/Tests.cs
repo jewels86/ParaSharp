@@ -1,6 +1,4 @@
-﻿using ILGPU.Runtime.Cuda;
-using Jewels.Opal;
-using Jewels.ParaSharp;
+﻿using Jewels.ParaSharp;
 
 namespace Testing;
 
@@ -26,10 +24,10 @@ public class Tests
             total: 8,
             inputs: inputs,
             targets: targets,
-            lr: 0.01f,
-            maxEpochs: 1000,
-            loss: Paravector.MeanSquaredError,
-            epsilon: 0.001f,
+            lr: 0.001f,
+            maxEpochs: 10000,
+            loss: Scalar.MSE,
+            lossEpsilon: 0.001f,
             action: (loss, epoch) =>
             {
                 if (epoch % 100 == 0)
@@ -37,7 +35,7 @@ public class Tests
             }
         );
     
-        Console.WriteLine("\nTraining complete!\n");
+        Console.WriteLine($"\nTraining complete! {chain.DomainLength()} domain length.\n");
     
         Console.WriteLine("Testing approximation:");
         float[] testPoints = [0f, MathF.PI / 4, MathF.PI / 2, MathF.PI, 3 * MathF.PI / 2, 2 * MathF.PI];

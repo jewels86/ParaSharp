@@ -398,4 +398,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
+/Jewels.ParaSharp/obj/**
 /Jewels.ParaSharp/obj
+/Jewels.ParaSharp/bin
