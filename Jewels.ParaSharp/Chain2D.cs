@@ -129,7 +129,7 @@ public class Chain2D
         Func<Scalar, float, Scalar> loss, 
         Func<float, float, float>? refinementLoss = null, 
         int refinementEpochs = 10, 
-        float explorationRate = 0.2f,
+        float explorationRate = 0.4f,
         Action<int, float>? progressAction = null)
     {
         Chain2D bestChain = new([]);

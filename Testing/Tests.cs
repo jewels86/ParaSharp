@@ -27,9 +27,9 @@ public class Tests
         }
     
         Console.WriteLine("Training 8 paravectors to approximate sin(x) from 0 to 2π...");
-        var chain = Chain2D.InductiveDescent(8, 0.02f, 3000, inputs, targets, Scalar.MSE);
-        //var chain = Chain2D.InductiveExploration(8, 0.1f, 2000, inputs, targets, Scalar.MSE, progressAction: (epoch, loss) => 
-        //    Console.WriteLine($"Refinement epoch {epoch} | Loss: {loss}"));
+        //var chain = Chain2D.InductiveDescent(8, 0.02f, 3000, inputs, targets, Scalar.MSE);
+        var chain = Chain2D.InductiveExploration(8, 0.02f, 3000, inputs, targets, Scalar.MSE, 
+            refinementEpochs: 20, explorationRate: 0.5f, progressAction: (epoch, loss) => Console.WriteLine($"Refinement epoch {epoch} | Loss: {loss}"));
         Console.WriteLine($"Training complete! {chain.DomainLength()} domain length.");
     
         Console.WriteLine("Testing approximation:");
